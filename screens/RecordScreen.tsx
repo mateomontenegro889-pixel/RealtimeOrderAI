@@ -8,7 +8,7 @@ import { RecordButton } from "@/components/RecordButton";
 import { useScreenInsets } from "@/hooks/useScreenInsets";
 import { Spacing } from "@/constants/theme";
 import { startRecording, stopRecording, requestAudioPermissions } from "@/utils/audioRecording";
-import { transcribeAudio } from "@/utils/transcription";
+import { transcribeAudio, extractMealAndDrinkOrders } from "@/utils/transcription";
 import { getApiKey } from "@/utils/apiKeyStorage";
 
 export default function RecordScreen() {
@@ -77,13 +77,14 @@ export default function RecordScreen() {
         }
 
         const transcribedText = await transcribeAudio(audioUri, apiKey);
+        const cleanedText = await extractMealAndDrinkOrders(transcribedText, apiKey);
 
         setIsProcessing(false);
         setRecordingTime(0);
 
         navigation.navigate("ConfirmOrder", {
           audioUri,
-          transcribedText,
+          transcribedText: cleanedText,
         });
       } catch (error: any) {
         setIsProcessing(false);
