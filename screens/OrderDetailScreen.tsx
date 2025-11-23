@@ -15,8 +15,17 @@ export default function OrderDetailScreen() {
   const navigation = useNavigation<any>();
   const route = useRoute<any>();
   const { orderId } = route.params as { orderId: string };
+  const [order, setOrder] = React.useState<any>(null);
+  const [loading, setLoading] = React.useState(true);
 
-  const order = orderStore.getById(orderId);
+  React.useEffect(() => {
+    const fetchOrder = async () => {
+      const fetchedOrder = await orderStore.getById(orderId);
+      setOrder(fetchedOrder);
+      setLoading(false);
+    };
+    fetchOrder();
+  }, [orderId]);
 
   useLayoutEffect(() => {
     navigation.setOptions({
@@ -44,6 +53,14 @@ export default function OrderDetailScreen() {
       console.error("Error sharing:", error);
     }
   };
+
+  if (loading) {
+    return (
+      <ScreenScrollView contentContainerStyle={styles.container}>
+        <ThemedText>Loading...</ThemedText>
+      </ScreenScrollView>
+    );
+  }
 
   if (!order) {
     return (

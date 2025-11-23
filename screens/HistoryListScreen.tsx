@@ -21,10 +21,10 @@ export default function HistoryListScreen() {
   const [orders, setOrders] = useState<Order[]>([]);
   const [refreshing, setRefreshing] = useState(false);
 
-  const loadOrders = useCallback(() => {
+  const loadOrders = useCallback(async () => {
     const allOrders = searchQuery
-      ? orderStore.search(searchQuery)
-      : orderStore.getAll();
+      ? await orderStore.search(searchQuery)
+      : await orderStore.getAll();
     setOrders(allOrders);
   }, [searchQuery]);
 

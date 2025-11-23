@@ -65,7 +65,7 @@ export default function ConfirmOrderScreen() {
     );
   };
 
-  const handleConfirm = () => {
+  const handleConfirm = async () => {
     const newOrder: Order = {
       id: Date.now().toString(),
       audioUri,
@@ -75,8 +75,12 @@ export default function ConfirmOrderScreen() {
       duration: "0:15",
     };
 
-    orderStore.add(newOrder);
-    navigation.navigate("RecordTab");
+    try {
+      await orderStore.add(newOrder);
+      navigation.navigate("RecordTab");
+    } catch (error) {
+      Alert.alert("Error", "Failed to save order. Please try again.");
+    }
   };
 
   return (

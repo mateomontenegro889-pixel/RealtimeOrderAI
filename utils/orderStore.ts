@@ -1,29 +1,24 @@
 import { Order } from "@/types/order";
-
-let orders: Order[] = [];
+import { getAllOrders, getOrderById, addOrder, searchOrders, initDatabase } from "./database";
 
 export const orderStore = {
-  getAll: (): Order[] => {
-    return [...orders].sort((a, b) => 
-      new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()
-    );
+  init: async (): Promise<void> => {
+    await initDatabase();
   },
 
-  getById: (id: string): Order | undefined => {
-    return orders.find(order => order.id === id);
+  getAll: async (): Promise<Order[]> => {
+    return await getAllOrders();
   },
 
-  add: (order: Order): void => {
-    orders = [order, ...orders];
+  getById: async (id: string): Promise<Order | null> => {
+    return await getOrderById(id);
   },
 
-  search: (query: string): Order[] => {
-    const lowerQuery = query.toLowerCase();
-    return orders.filter(order =>
-      order.transcribedText.toLowerCase().includes(lowerQuery) ||
-      order.staffName.toLowerCase().includes(lowerQuery)
-    ).sort((a, b) => 
-      new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()
-    );
+  add: async (order: Order): Promise<void> => {
+    await addOrder(order);
+  },
+
+  search: async (query: string): Promise<Order[]> => {
+    return await searchOrders(query);
   },
 };
