@@ -1,5 +1,5 @@
-import React from "react";
-import { View, StyleSheet, Pressable, Alert } from "react-native";
+import React, { useState, useEffect } from "react";
+import { View, StyleSheet, Pressable, Alert, TextInput, Modal } from "react-native";
 import { Feather } from "@expo/vector-icons";
 import { ThemedView } from "@/components/ThemedView";
 import { ThemedText } from "@/components/ThemedText";
@@ -7,6 +7,8 @@ import { Card } from "@/components/Card";
 import { ScreenScrollView } from "@/components/ScreenScrollView";
 import { useTheme } from "@/hooks/useTheme";
 import { Spacing, BorderRadius } from "@/constants/theme";
+import { getApiKey, saveApiKey, deleteApiKey } from "@/utils/apiKeyStorage";
+import { validateApiKey } from "@/utils/transcription";
 
 interface SettingsItemProps {
   icon: string;
@@ -50,7 +52,62 @@ function SettingsItem({
 }
 
 export default function ProfileScreen() {
-  const { theme } = useTheme();
+  const { theme, isDark } = useTheme();
+  const [hasApiKey, setHasApiKey] = useState(false);
+  const [showApiKeyModal, setShowApiKeyModal] = useState(false);
+  const [apiKeyInput, setApiKeyInput] = useState("");
+
+  useEffect(() => {
+    checkApiKey();
+  }, []);
+
+  const checkApiKey = async () => {
+    const apiKey = await getApiKey();
+    setHasApiKey(!!apiKey);
+  };
+
+  const handleSaveApiKey = async () => {
+    if (!validateApiKey(apiKeyInput)) {
+      Alert.alert(
+        "Invalid API Key",
+        "Please enter a valid OpenAI API key (starts with 'sk-')."
+      );
+      return;
+    }
+
+    try {
+      await saveApiKey(apiKeyInput);
+      setHasApiKey(true);
+      setShowApiKeyModal(false);
+      setApiKeyInput("");
+      Alert.alert("Success", "API key saved successfully!");
+    } catch (error) {
+      Alert.alert("Error", "Failed to save API key. Please try again.");
+    }
+  };
+
+  const handleRemoveApiKey = () => {
+    Alert.alert(
+      "Remove API Key",
+      "Are you sure you want to remove your OpenAI API key?",
+      [
+        { text: "Cancel", style: "cancel" },
+        {
+          text: "Remove",
+          style: "destructive",
+          onPress: async () => {
+            try {
+              await deleteApiKey();
+              setHasApiKey(false);
+              Alert.alert("Removed", "API key removed successfully.");
+            } catch (error) {
+              Alert.alert("Error", "Failed to remove API key.");
+            }
+          },
+        },
+      ]
+    );
+  };
 
   const handleLogout = () => {
     Alert.alert("Log Out", "Are you sure you want to log out?", [
@@ -87,6 +144,34 @@ export default function ProfileScreen() {
           </View>
         </View>
       </Card>
+
+      <View style={styles.section}>
+        <ThemedText type="caption" style={styles.sectionTitle}>
+          API CONFIGURATION
+        </ThemedText>
+        <Card>
+          <SettingsItem
+            icon="key"
+            label="OpenAI API Key"
+            value={hasApiKey ? "Configured" : "Not Set"}
+            onPress={() => setShowApiKeyModal(true)}
+          />
+          {hasApiKey ? (
+            <>
+              <View style={styles.separator} />
+              <SettingsItem
+                icon="trash-2"
+                label="Remove API Key"
+                onPress={handleRemoveApiKey}
+                showChevron={false}
+              />
+            </>
+          ) : null}
+        </Card>
+        <ThemedText type="caption" style={styles.helperText}>
+          Your API key is stored securely on this device and used only for audio transcription.
+        </ThemedText>
+      </View>
 
       <View style={styles.section}>
         <ThemedText type="caption" style={styles.sectionTitle}>
@@ -162,6 +247,82 @@ export default function ProfileScreen() {
           />
         </Card>
       </View>
+
+      <Modal
+        visible={showApiKeyModal}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setShowApiKeyModal(false)}
+      >
+        <Pressable
+          style={styles.modalOverlay}
+          onPress={() => setShowApiKeyModal(false)}
+        >
+          <Pressable
+            style={[
+              styles.modalContent,
+              { backgroundColor: theme.backgroundSecondary },
+            ]}
+            onPress={(e) => e.stopPropagation()}
+          >
+            <View style={styles.modalHeader}>
+              <ThemedText type="title">OpenAI API Key</ThemedText>
+              <Pressable
+                onPress={() => setShowApiKeyModal(false)}
+                style={({ pressed }) => ({ opacity: pressed ? 0.5 : 1 })}
+              >
+                <Feather name="x" size={24} color={theme.text} />
+              </Pressable>
+            </View>
+
+            <ThemedText type="caption" style={styles.modalDescription}>
+              Enter your OpenAI API key to enable audio transcription. Get your API key from platform.openai.com/api-keys
+            </ThemedText>
+
+            <TextInput
+              style={[
+                styles.apiKeyInput,
+                {
+                  backgroundColor: theme.backgroundDefault,
+                  color: theme.text,
+                  borderColor: theme.textSecondary,
+                },
+              ]}
+              value={apiKeyInput}
+              onChangeText={setApiKeyInput}
+              placeholder="sk-..."
+              placeholderTextColor={theme.textSecondary}
+              autoCapitalize="none"
+              autoCorrect={false}
+              secureTextEntry
+            />
+
+            <View style={styles.modalActions}>
+              <Pressable
+                style={[styles.modalButton, styles.cancelButton]}
+                onPress={() => {
+                  setShowApiKeyModal(false);
+                  setApiKeyInput("");
+                }}
+              >
+                <ThemedText>Cancel</ThemedText>
+              </Pressable>
+              <Pressable
+                style={[
+                  styles.modalButton,
+                  styles.saveButton,
+                  { backgroundColor: theme.primary },
+                ]}
+                onPress={handleSaveApiKey}
+              >
+                <ThemedText style={{ color: theme.buttonText }}>
+                  Save
+                </ThemedText>
+              </Pressable>
+            </View>
+          </Pressable>
+        </Pressable>
+      </Modal>
     </ScreenScrollView>
   );
 }
@@ -221,4 +382,57 @@ const styles = StyleSheet.create({
     backgroundColor: "#E5E7EB",
     opacity: 0.3,
   },
+  helperText: {
+    marginTop: Spacing.sm,
+    opacity: 0.6,
+    lineHeight: 18,
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: "rgba(0, 0, 0, 0.5)",
+    justifyContent: "center",
+    alignItems: "center",
+    padding: Spacing.xl,
+  },
+  modalContent: {
+    width: "100%",
+    maxWidth: 400,
+    borderRadius: BorderRadius.lg,
+    padding: Spacing.xl,
+    gap: Spacing.lg,
+  },
+  modalHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+  },
+  modalDescription: {
+    lineHeight: 20,
+    opacity: 0.7,
+  },
+  apiKeyInput: {
+    height: 48,
+    borderWidth: 1,
+    borderRadius: BorderRadius.md,
+    paddingHorizontal: Spacing.lg,
+    fontSize: 16,
+  },
+  modalActions: {
+    flexDirection: "row",
+    gap: Spacing.md,
+    marginTop: Spacing.md,
+  },
+  modalButton: {
+    flex: 1,
+    height: 48,
+    borderRadius: BorderRadius.md,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  cancelButton: {
+    backgroundColor: "transparent",
+    borderWidth: 1,
+    borderColor: "#E5E7EB",
+  },
+  saveButton: {},
 });

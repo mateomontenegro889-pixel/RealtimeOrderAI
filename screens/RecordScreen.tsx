@@ -1,13 +1,15 @@
 import React, { useState, useEffect } from "react";
 import { View, StyleSheet, Alert } from "react-native";
-import { useNavigation } from "@react-navigation/native";
+import { useNavigation, useFocusEffect } from "@react-navigation/native";
 import * as Haptics from "expo-haptics";
 import { ThemedView } from "@/components/ThemedView";
 import { ThemedText } from "@/components/ThemedText";
 import { RecordButton } from "@/components/RecordButton";
 import { useScreenInsets } from "@/hooks/useScreenInsets";
 import { Spacing } from "@/constants/theme";
-import { mockTranscribe } from "@/utils/mockTranscription";
+import { startRecording, stopRecording, requestAudioPermissions } from "@/utils/audioRecording";
+import { transcribeAudio } from "@/utils/transcription";
+import { getApiKey } from "@/utils/apiKeyStorage";
 
 export default function RecordScreen() {
   const { paddingTop, paddingBottom } = useScreenInsets();
@@ -15,6 +17,18 @@ export default function RecordScreen() {
   const [isRecording, setIsRecording] = useState(false);
   const [recordingTime, setRecordingTime] = useState(0);
   const [isProcessing, setIsProcessing] = useState(false);
+  const [hasApiKey, setHasApiKey] = useState(false);
+
+  useFocusEffect(
+    React.useCallback(() => {
+      checkApiKey();
+    }, [])
+  );
+
+  const checkApiKey = async () => {
+    const apiKey = await getApiKey();
+    setHasApiKey(!!apiKey);
+  };
 
   useEffect(() => {
     let interval: NodeJS.Timeout;
@@ -37,29 +51,65 @@ export default function RecordScreen() {
   const handleRecordPress = async () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
 
+    if (!hasApiKey && !isRecording) {
+      Alert.alert(
+        "API Key Required",
+        "Please add your OpenAI API key in the Profile tab to use transcription.",
+        [{ text: "OK" }]
+      );
+      return;
+    }
+
     if (isRecording) {
       setIsRecording(false);
       setIsProcessing(true);
 
       try {
-        const transcribedText = await mockTranscribe(recordingTime);
-        const mockAudioUri = `recording_${Date.now()}.m4a`;
+        const audioUri = await stopRecording();
+        
+        if (!audioUri) {
+          throw new Error("Failed to save recording");
+        }
+
+        const apiKey = await getApiKey();
+        if (!apiKey) {
+          throw new Error("API key not found");
+        }
+
+        const transcribedText = await transcribeAudio(audioUri, apiKey);
 
         setIsProcessing(false);
         setRecordingTime(0);
 
         navigation.navigate("ConfirmOrder", {
-          audioUri: mockAudioUri,
+          audioUri,
           transcribedText,
         });
-      } catch (error) {
+      } catch (error: any) {
         setIsProcessing(false);
         setRecordingTime(0);
-        Alert.alert("Error", "Failed to transcribe audio. Please try again.");
+        
+        const errorMessage = error.message || "Failed to transcribe audio. Please try again.";
+        Alert.alert("Transcription Error", errorMessage);
       }
     } else {
-      setIsRecording(true);
-      setRecordingTime(0);
+      try {
+        const hasPermission = await requestAudioPermissions();
+        if (!hasPermission) {
+          Alert.alert(
+            "Permission Required",
+            "Please allow microphone access to record audio.",
+            [{ text: "OK" }]
+          );
+          return;
+        }
+
+        await startRecording();
+        setIsRecording(true);
+        setRecordingTime(0);
+      } catch (error: any) {
+        Alert.alert("Recording Error", error.message || "Failed to start recording");
+      }
     }
   };
 
