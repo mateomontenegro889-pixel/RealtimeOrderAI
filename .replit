@@ -20,10 +20,6 @@ externalPort = 3003
 localPort = 40503
 externalPort = 3001
 
-[[ports]]
-localPort = 41743
-externalPort = 3002
-
 [workflows]
 runButton = "Project"
 
@@ -82,9 +78,10 @@ ensurePreviewReachable = "/status"
 stack = "EXPO"
 
 [deployment]
-deploymentTarget = "static"
+deploymentTarget = "cloudrun"
 publicDir = "static-build"
 build = ["node", "scripts/build.js"]
+run = ["sh", "-c", "node server . js"]
 
 # Expo manifest headers
 [[deployment.responseHeaders]]
