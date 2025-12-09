@@ -295,20 +295,6 @@ export default function ProfileScreen() {
         </ThemedText>
         <Card>
           <SettingsItem
-            icon="shield"
-            label="Privacy Policy"
-            onPress={() => Alert.alert("Privacy Policy", "Feature coming soon")}
-          />
-          <View style={styles.separator} />
-          <SettingsItem
-            icon="file-text"
-            label="Terms of Service"
-            onPress={() =>
-              Alert.alert("Terms of Service", "Feature coming soon")
-            }
-          />
-          <View style={styles.separator} />
-          <SettingsItem
             icon="info"
             label="App Version"
             value="1.0.0"
