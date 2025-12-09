@@ -209,8 +209,8 @@ export default function ProfileScreen() {
           <SettingsItem
             icon="globe"
             label="Language"
-            value="English"
-            onPress={() => Alert.alert("Language", "Feature coming soon")}
+            value="French & English"
+            onPress={() => Alert.alert("Language", "French & English")}
           />
           <View style={styles.separator} />
           <SettingsItem
