@@ -19,6 +19,13 @@ export default function ConfirmOrderScreen() {
   };
 
   const [orderText, setOrderText] = useState(transcribedText);
+  const staffName = "Chef";
+
+  const deduplicateMeals = (text: string): string => {
+    const lines = text.split("\n").filter(line => line.trim());
+    const uniqueLines = [...new Set(lines)];
+    return uniqueLines.join("\n");
+  };
 
   useLayoutEffect(() => {
     navigation.setOptions({
@@ -69,9 +76,9 @@ export default function ConfirmOrderScreen() {
     const newOrder: Order = {
       id: Date.now().toString(),
       audioUri,
-      transcribedText: orderText,
+      transcribedText: deduplicateMeals(orderText),
       timestamp: new Date().toISOString(),
-      staffName: "John Smith",
+      staffName: staffName,
       duration: "0:15",
     };
 

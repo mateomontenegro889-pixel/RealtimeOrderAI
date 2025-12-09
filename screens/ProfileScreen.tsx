@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import { View, StyleSheet, Pressable, Alert, TextInput, Modal } from "react-native";
 import { Feather } from "@expo/vector-icons";
 import { ThemedView } from "@/components/ThemedView";
@@ -55,15 +55,28 @@ export default function ProfileScreen() {
   const { theme, isDark } = useTheme();
   const [hasApiKey, setHasApiKey] = useState(false);
   const [showApiKeyModal, setShowApiKeyModal] = useState(false);
+  const [showNameModal, setShowNameModal] = useState(false);
   const [apiKeyInput, setApiKeyInput] = useState("");
+  const [staffName, setStaffName] = useState("Chef");
+  const [nameInput, setNameInput] = useState("Chef");
 
-  useEffect(() => {
-    checkApiKey();
-  }, []);
-
-  const checkApiKey = async () => {
+  const handleCheckApiKey = async () => {
     const apiKey = await getApiKey();
     setHasApiKey(!!apiKey);
+  };
+
+  React.useEffect(() => {
+    handleCheckApiKey();
+  }, []);
+
+  const handleSaveStaffName = () => {
+    if (!nameInput.trim()) {
+      Alert.alert("Invalid Name", "Please enter a valid staff name.");
+      return;
+    }
+    setStaffName(nameInput.trim());
+    setShowNameModal(false);
+    Alert.alert("Success", "Staff name updated successfully!");
   };
 
   const handleSaveApiKey = async () => {
@@ -124,26 +137,34 @@ export default function ProfileScreen() {
 
   return (
     <ScreenScrollView contentContainerStyle={styles.container}>
-      <Card style={styles.profileCard}>
-        <View style={styles.profileHeader}>
-          <View
-            style={[
-              styles.avatar,
-              { backgroundColor: theme.primary },
-            ]}
-          >
-            <ThemedText
-              style={[styles.avatarText, { color: theme.buttonText }]}
+      <Pressable
+        onPress={() => {
+          setNameInput(staffName);
+          setShowNameModal(true);
+        }}
+        style={({ pressed }) => ({ opacity: pressed ? 0.6 : 1 })}
+      >
+        <Card style={styles.profileCard}>
+          <View style={styles.profileHeader}>
+            <View
+              style={[
+                styles.avatar,
+                { backgroundColor: theme.primary },
+              ]}
             >
-              JS
-            </ThemedText>
+              <ThemedText
+                style={[styles.avatarText, { color: theme.buttonText }]}
+              >
+                {staffName.substring(0, 2).toUpperCase()}
+              </ThemedText>
+            </View>
+            <View style={styles.profileInfo}>
+              <ThemedText type="title">{staffName}</ThemedText>
+              <ThemedText type="caption">Staff Member • Tap to edit</ThemedText>
+            </View>
           </View>
-          <View style={styles.profileInfo}>
-            <ThemedText type="title">John Smith</ThemedText>
-            <ThemedText type="caption">Staff Member</ThemedText>
-          </View>
-        </View>
-      </Card>
+        </Card>
+      </Pressable>
 
       <View style={styles.section}>
         <ThemedText type="caption" style={styles.sectionTitle}>
@@ -219,6 +240,54 @@ export default function ProfileScreen() {
           />
         </Card>
       </View>
+
+      <Modal
+        visible={showNameModal}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setShowNameModal(false)}
+      >
+        <View style={[styles.modalOverlay, { backgroundColor: "rgba(0,0,0,0.5)" }]}>
+          <View style={[styles.modalContent, { backgroundColor: theme.backgroundRoot }]}>
+            <ThemedText type="title" style={styles.modalTitle}>Edit Staff Name</ThemedText>
+            <TextInput
+              value={nameInput}
+              onChangeText={setNameInput}
+              placeholder="Enter your name..."
+              placeholderTextColor={theme.textSecondary}
+              style={[
+                styles.modalInput,
+                {
+                  backgroundColor: theme.backgroundDefault,
+                  color: theme.text,
+                  borderColor: theme.border,
+                },
+              ]}
+            />
+            <View style={styles.modalButtons}>
+              <Pressable
+                onPress={() => setShowNameModal(false)}
+                style={({ pressed }) => [
+                  styles.modalButton,
+                  { opacity: pressed ? 0.6 : 1 },
+                ]}
+              >
+                <ThemedText>Cancel</ThemedText>
+              </Pressable>
+              <Pressable
+                onPress={handleSaveStaffName}
+                style={({ pressed }) => [
+                  styles.modalButton,
+                  styles.modalButtonPrimary,
+                  { backgroundColor: theme.primary, opacity: pressed ? 0.8 : 1 },
+                ]}
+              >
+                <ThemedText style={{ color: theme.buttonText }}>Save</ThemedText>
+              </Pressable>
+            </View>
+          </View>
+        </View>
+      </Modal>
 
       <View style={styles.section}>
         <ThemedText type="caption" style={styles.sectionTitle}>
@@ -328,6 +397,40 @@ export default function ProfileScreen() {
 }
 
 const styles = StyleSheet.create({
+  modalOverlay: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  modalContent: {
+    width: "80%",
+    borderRadius: BorderRadius.lg,
+    padding: Spacing.xl,
+    gap: Spacing.lg,
+  },
+  modalTitle: {
+    marginBottom: Spacing.sm,
+  },
+  modalInput: {
+    borderWidth: 1,
+    borderRadius: BorderRadius.sm,
+    padding: Spacing.lg,
+    fontSize: 17,
+    minHeight: Spacing.inputHeight,
+  },
+  modalButtons: {
+    flexDirection: "row",
+    gap: Spacing.md,
+    justifyContent: "flex-end",
+  },
+  modalButton: {
+    paddingHorizontal: Spacing.lg,
+    paddingVertical: Spacing.md,
+    borderRadius: BorderRadius.sm,
+  },
+  modalButtonPrimary: {
+    paddingHorizontal: Spacing.xl,
+  },
   container: {
     padding: Spacing.xl,
     gap: Spacing["2xl"],
@@ -387,20 +490,6 @@ const styles = StyleSheet.create({
     opacity: 0.6,
     lineHeight: 18,
   },
-  modalOverlay: {
-    flex: 1,
-    backgroundColor: "rgba(0, 0, 0, 0.5)",
-    justifyContent: "center",
-    alignItems: "center",
-    padding: Spacing.xl,
-  },
-  modalContent: {
-    width: "100%",
-    maxWidth: 400,
-    borderRadius: BorderRadius.lg,
-    padding: Spacing.xl,
-    gap: Spacing.lg,
-  },
   modalHeader: {
     flexDirection: "row",
     justifyContent: "space-between",
@@ -421,13 +510,6 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     gap: Spacing.md,
     marginTop: Spacing.md,
-  },
-  modalButton: {
-    flex: 1,
-    height: 48,
-    borderRadius: BorderRadius.md,
-    justifyContent: "center",
-    alignItems: "center",
   },
   cancelButton: {
     backgroundColor: "transparent",
