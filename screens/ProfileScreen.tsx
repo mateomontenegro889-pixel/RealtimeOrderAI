@@ -122,19 +122,6 @@ export default function ProfileScreen() {
     );
   };
 
-  const handleLogout = () => {
-    Alert.alert("Log Out", "Are you sure you want to log out?", [
-      { text: "Cancel", style: "cancel" },
-      {
-        text: "Log Out",
-        style: "destructive",
-        onPress: () => {
-          Alert.alert("Logged Out", "You have been logged out successfully.");
-        },
-      },
-    ]);
-  };
-
   return (
     <ScreenScrollView contentContainerStyle={styles.container}>
       <Pressable
@@ -194,53 +181,6 @@ export default function ProfileScreen() {
         </ThemedText>
       </View>
 
-      <View style={styles.section}>
-        <ThemedText type="caption" style={styles.sectionTitle}>
-          SETTINGS
-        </ThemedText>
-        <Card>
-          <SettingsItem
-            icon="volume-2"
-            label="Audio Quality"
-            value="High"
-            onPress={() => Alert.alert("Audio Quality", "Feature coming soon")}
-          />
-          <View style={styles.separator} />
-          <SettingsItem
-            icon="globe"
-            label="Language"
-            value="French & English"
-            onPress={() => Alert.alert("Language", "French & English")}
-          />
-          <View style={styles.separator} />
-          <SettingsItem
-            icon="bell"
-            label="Notifications"
-            onPress={() => Alert.alert("Notifications", "Feature coming soon")}
-          />
-        </Card>
-      </View>
-
-      <View style={styles.section}>
-        <ThemedText type="caption" style={styles.sectionTitle}>
-          ACCOUNT
-        </ThemedText>
-        <Card>
-          <SettingsItem
-            icon="user"
-            label="Account Settings"
-            onPress={() => Alert.alert("Account", "Feature coming soon")}
-          />
-          <View style={styles.separator} />
-          <SettingsItem
-            icon="log-out"
-            label="Log Out"
-            onPress={handleLogout}
-            showChevron={false}
-          />
-        </Card>
-      </View>
-
       <Modal
         visible={showNameModal}
         transparent
@@ -288,20 +228,6 @@ export default function ProfileScreen() {
           </View>
         </View>
       </Modal>
-
-      <View style={styles.section}>
-        <ThemedText type="caption" style={styles.sectionTitle}>
-          ABOUT
-        </ThemedText>
-        <Card>
-          <SettingsItem
-            icon="info"
-            label="App Version"
-            value="1.0.0"
-            showChevron={false}
-          />
-        </Card>
-      </View>
 
       <Modal
         visible={showApiKeyModal}
