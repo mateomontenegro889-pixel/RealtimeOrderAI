@@ -1,5 +1,5 @@
 import React, { useLayoutEffect } from "react";
-import { View, StyleSheet, Pressable, Share } from "react-native";
+import { View, StyleSheet, Pressable, Share, Alert } from "react-native";
 import { useRoute, useNavigation } from "@react-navigation/native";
 import { Feather } from "@expo/vector-icons";
 import { ThemedText } from "@/components/ThemedText";
@@ -7,7 +7,7 @@ import { AudioPlayer } from "@/components/AudioPlayer";
 import { Card } from "@/components/Card";
 import { ScreenScrollView } from "@/components/ScreenScrollView";
 import { useTheme } from "@/hooks/useTheme";
-import { Spacing } from "@/constants/theme";
+import { Spacing, BorderRadius } from "@/constants/theme";
 import { orderStore } from "@/utils/orderStore";
 
 export default function OrderDetailScreen() {
@@ -30,22 +30,88 @@ export default function OrderDetailScreen() {
   useLayoutEffect(() => {
     navigation.setOptions({
       headerRight: () => (
-        <Pressable
-          onPress={handleShare}
-          style={({ pressed }) => ({ opacity: pressed ? 0.6 : 1 })}
-        >
-          <Feather name="share" size={20} color={theme.text} />
-        </Pressable>
+        <View style={{ flexDirection: 'row', gap: Spacing.md }}>
+          <Pressable
+            onPress={handleShare}
+            style={({ pressed }) => ({ opacity: pressed ? 0.6 : 1 })}
+          >
+            <Feather name="share" size={20} color={theme.text} />
+          </Pressable>
+          <Pressable
+            onPress={handleDelete}
+            style={({ pressed }) => ({ opacity: pressed ? 0.6 : 1 })}
+          >
+            <Feather name="trash-2" size={20} color="#DC2626" />
+          </Pressable>
+        </View>
       ),
     });
-  }, [navigation, theme]);
+  }, [navigation, theme, order]);
+
+  const handleDelete = () => {
+    if (!order) return;
+    
+    Alert.alert(
+      "Delete Order",
+      "Are you sure you want to delete this order? This action cannot be undone.",
+      [
+        { text: "Cancel", style: "cancel" },
+        {
+          text: "Delete",
+          style: "destructive",
+          onPress: async () => {
+            try {
+              await orderStore.delete(order.id);
+              navigation.goBack();
+            } catch (error) {
+              Alert.alert("Error", "Failed to delete order.");
+            }
+          },
+        },
+      ]
+    );
+  };
+
+  const handleCloseOrder = async () => {
+    if (!order) return;
+    
+    const newStatus = order.status === 'closed' ? 'open' : 'closed';
+    const actionText = newStatus === 'closed' ? 'close' : 'reopen';
+    
+    Alert.alert(
+      `${newStatus === 'closed' ? 'Close' : 'Reopen'} Order`,
+      `Are you sure you want to ${actionText} this order?`,
+      [
+        { text: "Cancel", style: "cancel" },
+        {
+          text: newStatus === 'closed' ? "Close" : "Reopen",
+          onPress: async () => {
+            try {
+              if (newStatus === 'closed') {
+                await orderStore.closeOrder(order.id);
+              } else {
+                await orderStore.reopenOrder(order.id);
+              }
+              setOrder({ ...order, status: newStatus });
+            } catch (error) {
+              Alert.alert("Error", `Failed to ${actionText} order.`);
+            }
+          },
+        },
+      ]
+    );
+  };
 
   const handleShare = async () => {
     if (!order) return;
 
     try {
+      const tableInfo = order.tableNumber ? `Table ${order.tableNumber}` : '';
+      const guestInfo = order.guestCount ? `${order.guestCount} guests` : '';
+      const headerInfo = [tableInfo, guestInfo].filter(Boolean).join(' - ');
+      
       await Share.share({
-        message: `Order from ${order.staffName}\n\n${order.transcribedText}\n\nRecorded: ${new Date(
+        message: `Order from ${order.staffName}${headerInfo ? `\n${headerInfo}` : ''}\n\n${order.transcribedText}\n\nRecorded: ${new Date(
           order.timestamp
         ).toLocaleString()}`,
       });
@@ -72,6 +138,33 @@ export default function OrderDetailScreen() {
 
   return (
     <ScreenScrollView contentContainerStyle={styles.container}>
+      <Card style={styles.tableCard}>
+        <View style={styles.tableInfoRow}>
+          <View style={styles.tableInfoItem}>
+            <Feather name="grid" size={20} color={theme.primary} />
+            <View>
+              <ThemedText type="caption">Table</ThemedText>
+              <ThemedText type="title">{order.tableNumber || '-'}</ThemedText>
+            </View>
+          </View>
+          <View style={styles.tableInfoItem}>
+            <Feather name="users" size={20} color={theme.primary} />
+            <View>
+              <ThemedText type="caption">Guests</ThemedText>
+              <ThemedText type="title">{order.guestCount || '-'}</ThemedText>
+            </View>
+          </View>
+          <View style={[
+            styles.statusBadge,
+            { backgroundColor: order.status === 'closed' ? '#DC2626' : '#16A34A' }
+          ]}>
+            <ThemedText style={styles.statusText}>
+              {order.status === 'closed' ? 'Closed' : 'Open'}
+            </ThemedText>
+          </View>
+        </View>
+      </Card>
+
       <View style={styles.section}>
         <ThemedText type="caption" style={styles.sectionTitle}>
           AUDIO RECORDING
@@ -111,6 +204,26 @@ export default function OrderDetailScreen() {
           </View>
         </Card>
       </View>
+
+      <Pressable
+        onPress={handleCloseOrder}
+        style={({ pressed }) => [
+          styles.closeButton,
+          {
+            backgroundColor: order.status === 'closed' ? '#16A34A' : theme.primary,
+            opacity: pressed ? 0.8 : 1,
+          },
+        ]}
+      >
+        <Feather
+          name={order.status === 'closed' ? 'refresh-cw' : 'check-circle'}
+          size={20}
+          color="#FFFFFF"
+        />
+        <ThemedText style={styles.closeButtonText}>
+          {order.status === 'closed' ? 'Reopen Order' : 'Close Order'}
+        </ThemedText>
+      </Pressable>
     </ScreenScrollView>
   );
 }
@@ -119,6 +232,29 @@ const styles = StyleSheet.create({
   container: {
     padding: Spacing.xl,
     gap: Spacing["2xl"],
+  },
+  tableCard: {
+    padding: Spacing.lg,
+  },
+  tableInfoRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+  },
+  tableInfoItem: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: Spacing.sm,
+  },
+  statusBadge: {
+    paddingHorizontal: Spacing.md,
+    paddingVertical: Spacing.xs,
+    borderRadius: BorderRadius.full,
+  },
+  statusText: {
+    color: "#FFFFFF",
+    fontWeight: "600",
+    fontSize: 12,
   },
   section: {
     gap: Spacing.sm,
@@ -136,5 +272,19 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
     alignItems: "center",
     paddingVertical: Spacing.sm,
+  },
+  closeButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: Spacing.sm,
+    paddingVertical: Spacing.lg,
+    borderRadius: BorderRadius.md,
+    marginTop: Spacing.md,
+  },
+  closeButtonText: {
+    color: "#FFFFFF",
+    fontWeight: "600",
+    fontSize: 17,
   },
 });

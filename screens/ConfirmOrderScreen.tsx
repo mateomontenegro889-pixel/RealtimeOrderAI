@@ -1,13 +1,18 @@
 import React, { useState, useLayoutEffect } from "react";
-import { View, StyleSheet, TextInput, Pressable, Alert } from "react-native";
+import { View, StyleSheet, TextInput, Pressable, Alert, ScrollView } from "react-native";
 import { useNavigation, useRoute } from "@react-navigation/native";
+import { Feather } from "@expo/vector-icons";
 import { ThemedText } from "@/components/ThemedText";
 import { AudioPlayer } from "@/components/AudioPlayer";
+import { Card } from "@/components/Card";
 import { ScreenKeyboardAwareScrollView } from "@/components/ScreenKeyboardAwareScrollView";
 import { useTheme } from "@/hooks/useTheme";
 import { Spacing, BorderRadius } from "@/constants/theme";
 import { orderStore } from "@/utils/orderStore";
 import { Order } from "@/types/order";
+
+const TABLE_NUMBERS = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12];
+const GUEST_COUNTS = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
 
 export default function ConfirmOrderScreen() {
   const { theme } = useTheme();
@@ -19,6 +24,8 @@ export default function ConfirmOrderScreen() {
   };
 
   const [orderText, setOrderText] = useState(transcribedText);
+  const [tableNumber, setTableNumber] = useState<number>(1);
+  const [guestCount, setGuestCount] = useState<number>(2);
   const staffName = "Chef";
 
   const deduplicateMeals = (text: string): string => {
@@ -80,6 +87,9 @@ export default function ConfirmOrderScreen() {
       timestamp: new Date().toISOString(),
       staffName: staffName,
       duration: "0:15",
+      tableNumber,
+      guestCount,
+      status: 'open',
     };
 
     try {
@@ -92,6 +102,77 @@ export default function ConfirmOrderScreen() {
 
   return (
     <ScreenKeyboardAwareScrollView contentContainerStyle={styles.container}>
+      <View style={styles.section}>
+        <ThemedText type="caption" style={styles.sectionTitle}>
+          TABLE NUMBER
+        </ThemedText>
+        <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+          <View style={styles.selectionRow}>
+            {TABLE_NUMBERS.map((num) => (
+              <Pressable
+                key={num}
+                onPress={() => setTableNumber(num)}
+                style={[
+                  styles.selectionButton,
+                  {
+                    backgroundColor: tableNumber === num ? theme.primary : theme.backgroundDefault,
+                    borderColor: tableNumber === num ? theme.primary : theme.border,
+                  },
+                ]}
+              >
+                <ThemedText
+                  style={{
+                    color: tableNumber === num ? theme.buttonText : theme.text,
+                    fontWeight: tableNumber === num ? "600" : "400",
+                  }}
+                >
+                  {num}
+                </ThemedText>
+              </Pressable>
+            ))}
+          </View>
+        </ScrollView>
+      </View>
+
+      <View style={styles.section}>
+        <ThemedText type="caption" style={styles.sectionTitle}>
+          NUMBER OF GUESTS
+        </ThemedText>
+        <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+          <View style={styles.selectionRow}>
+            {GUEST_COUNTS.map((num) => (
+              <Pressable
+                key={num}
+                onPress={() => setGuestCount(num)}
+                style={[
+                  styles.selectionButton,
+                  {
+                    backgroundColor: guestCount === num ? theme.primary : theme.backgroundDefault,
+                    borderColor: guestCount === num ? theme.primary : theme.border,
+                  },
+                ]}
+              >
+                <View style={styles.guestButtonContent}>
+                  <Feather
+                    name="users"
+                    size={14}
+                    color={guestCount === num ? theme.buttonText : theme.text}
+                  />
+                  <ThemedText
+                    style={{
+                      color: guestCount === num ? theme.buttonText : theme.text,
+                      fontWeight: guestCount === num ? "600" : "400",
+                    }}
+                  >
+                    {num}
+                  </ThemedText>
+                </View>
+              </Pressable>
+            ))}
+          </View>
+        </ScrollView>
+      </View>
+
       <View style={styles.section}>
         <ThemedText type="caption" style={styles.sectionTitle}>
           AUDIO RECORDING
@@ -141,6 +222,23 @@ const styles = StyleSheet.create({
   sectionTitle: {
     textTransform: "uppercase",
     letterSpacing: 0.5,
+  },
+  selectionRow: {
+    flexDirection: "row",
+    gap: Spacing.sm,
+  },
+  selectionButton: {
+    width: 48,
+    height: 48,
+    borderRadius: BorderRadius.md,
+    borderWidth: 1,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  guestButtonContent: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
   },
   textInput: {
     borderWidth: 1,
