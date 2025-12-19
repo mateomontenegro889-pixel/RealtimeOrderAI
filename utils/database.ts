@@ -14,9 +14,22 @@ export async function initDatabase(): Promise<void> {
         transcribedText TEXT NOT NULL,
         staffName TEXT NOT NULL,
         timestamp TEXT NOT NULL,
-        duration TEXT NOT NULL
+        duration TEXT NOT NULL,
+        tableNumber INTEGER,
+        guestCount INTEGER,
+        status TEXT DEFAULT 'open'
       );
     `);
+    
+    try {
+      await db.execAsync(`ALTER TABLE orders ADD COLUMN tableNumber INTEGER;`);
+    } catch (e) {}
+    try {
+      await db.execAsync(`ALTER TABLE orders ADD COLUMN guestCount INTEGER;`);
+    } catch (e) {}
+    try {
+      await db.execAsync(`ALTER TABLE orders ADD COLUMN status TEXT DEFAULT 'open';`);
+    } catch (e) {}
   } catch (error) {
     console.error('Failed to initialize database:', error);
     throw error;
@@ -57,11 +70,33 @@ export async function addOrder(order: Order): Promise<void> {
   
   try {
     await db!.runAsync(
-      'INSERT INTO orders (id, audioUri, transcribedText, staffName, timestamp, duration) VALUES (?, ?, ?, ?, ?, ?)',
-      [order.id, order.audioUri, order.transcribedText, order.staffName, order.timestamp, order.duration]
+      'INSERT INTO orders (id, audioUri, transcribedText, staffName, timestamp, duration, tableNumber, guestCount, status) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)',
+      [order.id, order.audioUri, order.transcribedText, order.staffName, order.timestamp, order.duration, order.tableNumber || null, order.guestCount || null, order.status || 'open']
     );
   } catch (error) {
     console.error('Failed to add order:', error);
+    throw error;
+  }
+}
+
+export async function deleteOrder(id: string): Promise<void> {
+  if (!db) await initDatabase();
+  
+  try {
+    await db!.runAsync('DELETE FROM orders WHERE id = ?', [id]);
+  } catch (error) {
+    console.error('Failed to delete order:', error);
+    throw error;
+  }
+}
+
+export async function updateOrderStatus(id: string, status: 'open' | 'closed'): Promise<void> {
+  if (!db) await initDatabase();
+  
+  try {
+    await db!.runAsync('UPDATE orders SET status = ? WHERE id = ?', [status, id]);
+  } catch (error) {
+    console.error('Failed to update order status:', error);
     throw error;
   }
 }

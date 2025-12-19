@@ -5,4 +5,7 @@ export interface Order {
   timestamp: string;
   staffName: string;
   duration: string;
+  tableNumber?: number;
+  guestCount?: number;
+  status?: 'open' | 'closed';
 }

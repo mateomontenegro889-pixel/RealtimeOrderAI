@@ -1,5 +1,5 @@
 import { Order } from "@/types/order";
-import { getAllOrders, getOrderById, addOrder, searchOrders, initDatabase } from "./database";
+import { getAllOrders, getOrderById, addOrder, searchOrders, initDatabase, deleteOrder, updateOrderStatus } from "./database";
 
 export const orderStore = {
   init: async (): Promise<void> => {
@@ -20,5 +20,17 @@ export const orderStore = {
 
   search: async (query: string): Promise<Order[]> => {
     return await searchOrders(query);
+  },
+
+  delete: async (id: string): Promise<void> => {
+    await deleteOrder(id);
+  },
+
+  closeOrder: async (id: string): Promise<void> => {
+    await updateOrderStatus(id, 'closed');
+  },
+
+  reopenOrder: async (id: string): Promise<void> => {
+    await updateOrderStatus(id, 'open');
   },
 };
