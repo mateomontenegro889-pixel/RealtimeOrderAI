@@ -205,25 +205,47 @@ export default function OrderDetailScreen() {
         </Card>
       </View>
 
-      <Pressable
-        onPress={handleCloseOrder}
-        style={({ pressed }) => [
-          styles.closeButton,
-          {
-            backgroundColor: order.status === 'closed' ? '#16A34A' : theme.primary,
-            opacity: pressed ? 0.8 : 1,
-          },
-        ]}
-      >
-        <Feather
-          name={order.status === 'closed' ? 'refresh-cw' : 'check-circle'}
-          size={20}
-          color="#FFFFFF"
-        />
-        <ThemedText style={styles.closeButtonText}>
-          {order.status === 'closed' ? 'Reopen Order' : 'Close Order'}
-        </ThemedText>
-      </Pressable>
+      <View style={styles.buttonRow}>
+        {order.status === 'open' ? (
+          <Pressable
+            onPress={() => navigation.navigate('RecordMore', { existingOrderId: order.id })}
+            style={({ pressed }) => [
+              styles.actionButton,
+              {
+                backgroundColor: theme.backgroundDefault,
+                borderColor: theme.primary,
+                borderWidth: 2,
+                opacity: pressed ? 0.8 : 1,
+              },
+            ]}
+          >
+            <Feather name="mic" size={20} color={theme.primary} />
+            <ThemedText style={[styles.actionButtonText, { color: theme.primary }]}>
+              Record More
+            </ThemedText>
+          </Pressable>
+        ) : null}
+        <Pressable
+          onPress={handleCloseOrder}
+          style={({ pressed }) => [
+            styles.actionButton,
+            {
+              backgroundColor: order.status === 'closed' ? '#16A34A' : theme.primary,
+              opacity: pressed ? 0.8 : 1,
+              flex: order.status === 'open' ? 1 : undefined,
+            },
+          ]}
+        >
+          <Feather
+            name={order.status === 'closed' ? 'refresh-cw' : 'check-circle'}
+            size={20}
+            color="#FFFFFF"
+          />
+          <ThemedText style={styles.closeButtonText}>
+            {order.status === 'closed' ? 'Reopen Order' : 'Close Order'}
+          </ThemedText>
+        </Pressable>
+      </View>
     </ScreenScrollView>
   );
 }
@@ -273,14 +295,23 @@ const styles = StyleSheet.create({
     alignItems: "center",
     paddingVertical: Spacing.sm,
   },
-  closeButton: {
+  buttonRow: {
+    flexDirection: "row",
+    gap: Spacing.md,
+    marginTop: Spacing.md,
+  },
+  actionButton: {
+    flex: 1,
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
     gap: Spacing.sm,
     paddingVertical: Spacing.lg,
     borderRadius: BorderRadius.md,
-    marginTop: Spacing.md,
+  },
+  actionButtonText: {
+    fontWeight: "600",
+    fontSize: 17,
   },
   closeButtonText: {
     color: "#FFFFFF",

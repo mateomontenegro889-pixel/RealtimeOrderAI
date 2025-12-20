@@ -1,5 +1,5 @@
 import { Order } from "@/types/order";
-import { getAllOrders, getOrderById, addOrder, searchOrders, initDatabase, deleteOrder, updateOrderStatus } from "./database";
+import { getAllOrders, getOrderById, addOrder, searchOrders, initDatabase, deleteOrder, updateOrderStatus, appendToOrder } from "./database";
 
 export const orderStore = {
   init: async (): Promise<void> => {
@@ -32,5 +32,9 @@ export const orderStore = {
 
   reopenOrder: async (id: string): Promise<void> => {
     await updateOrderStatus(id, 'open');
+  },
+
+  appendItems: async (id: string, additionalText: string): Promise<void> => {
+    await appendToOrder(id, additionalText);
   },
 };

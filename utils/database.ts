@@ -116,3 +116,18 @@ export async function searchOrders(query: string): Promise<Order[]> {
     return [];
   }
 }
+
+export async function appendToOrder(id: string, additionalText: string): Promise<void> {
+  if (!db) await initDatabase();
+  
+  try {
+    const existingOrder = await getOrderById(id);
+    if (!existingOrder) throw new Error('Order not found');
+    
+    const newText = existingOrder.transcribedText + '\n\n--- Added Items ---\n' + additionalText;
+    await db!.runAsync('UPDATE orders SET transcribedText = ? WHERE id = ?', [newText, id]);
+  } catch (error) {
+    console.error('Failed to append to order:', error);
+    throw error;
+  }
+}
