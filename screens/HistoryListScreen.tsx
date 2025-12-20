@@ -92,6 +92,9 @@ export default function HistoryListScreen() {
             orderText={item.transcribedText}
             timestamp={formatTimestamp(item.timestamp)}
             staffName={item.staffName}
+            tableNumber={item.tableNumber}
+            guestCount={item.guestCount}
+            status={item.status}
             onPress={() =>
               navigation.navigate("OrderDetail", { orderId: item.id })
             }
