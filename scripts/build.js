@@ -412,6 +412,39 @@ function updateManifests(manifests, timestamp, baseUrl, assetsByHash) {
   console.log("Manifests updated");
 }
 
+async function exportWebBuild() {
+  console.log("Exporting web build...");
+  
+  return new Promise((resolve, reject) => {
+    const exportProcess = spawn("npx", ["expo", "export", "--platform", "web", "--output-dir", "static-build/web"], {
+      stdio: ["ignore", "pipe", "pipe"],
+      env: { ...process.env, CI: "1" },
+    });
+    
+    let output = "";
+    exportProcess.stdout.on("data", (data) => {
+      output += data.toString();
+    });
+    exportProcess.stderr.on("data", (data) => {
+      output += data.toString();
+    });
+    
+    exportProcess.on("close", (code) => {
+      if (code === 0) {
+        console.log("Web export complete");
+        resolve();
+      } else {
+        console.error("Web export output:", output);
+        reject(new Error(`Web export failed with code ${code}`));
+      }
+    });
+    
+    exportProcess.on("error", (error) => {
+      reject(error);
+    });
+  });
+}
+
 function createLandingPage(baseUrl) {
   const expsUrl = baseUrl.replace("https://", "");
   const template = fs.readFileSync(
@@ -423,7 +456,29 @@ function createLandingPage(baseUrl) {
     .replace(/BASE_URL_PLACEHOLDER/g, baseUrl)
     .replace(/EXPS_URL_PLACEHOLDER/g, expsUrl);
 
-  fs.writeFileSync(path.join("static-build", "index.html"), html);
+  fs.writeFileSync(path.join("static-build", "mobile.html"), html);
+  
+  if (fs.existsSync("static-build/web/index.html")) {
+    fs.copyFileSync("static-build/web/index.html", "static-build/index.html");
+    
+    const webDir = "static-build/web";
+    const files = fs.readdirSync(webDir);
+    for (const file of files) {
+      if (file !== "index.html") {
+        const src = path.join(webDir, file);
+        const dest = path.join("static-build", file);
+        if (fs.statSync(src).isDirectory()) {
+          fs.cpSync(src, dest, { recursive: true });
+        } else {
+          fs.copyFileSync(src, dest);
+        }
+      }
+    }
+    console.log("Web app deployed to root");
+  } else {
+    fs.writeFileSync(path.join("static-build", "index.html"), html);
+  }
+  
   console.log("Complete");
 }
 
@@ -459,6 +514,13 @@ async function main() {
     updateBundleUrls(timestamp, baseUrl);
   }
 
+  console.log("Exporting web version...");
+  try {
+    await exportWebBuild();
+  } catch (error) {
+    console.warn("Web export failed, falling back to mobile landing page:", error.message);
+  }
+  
   console.log("Updating manifests and creating landing page...");
   updateManifests(manifests, timestamp, baseUrl, assetsByHash);
   createLandingPage(baseUrl);
