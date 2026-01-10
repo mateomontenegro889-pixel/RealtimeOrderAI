@@ -157,3 +157,38 @@ Preferred communication style: Simple, everyday language.
 - **ESLint**: Code linting
 - **Prettier**: Code formatting
 - **Babel Plugin Module Resolver**: Import path aliasing
+
+## Docker Deployment (Google Cloud)
+
+The app can be containerized and deployed to Google Cloud Run independently of Replit.
+
+### Files
+- `Dockerfile` - Multi-stage build: Node.js builds the Expo web export, Nginx serves the static files
+- `nginx.conf` - Nginx configuration with COEP/COOP headers required for SQLite WASM
+- `.dockerignore` - Excludes node_modules, build artifacts, and env files
+- `cloudbuild.yaml` - Google Cloud Build configuration for automated deployment
+
+### Local Docker Build & Run
+```bash
+docker build -t order-transcribe .
+docker run -p 8080:8080 order-transcribe
+```
+
+### Deploy to Google Cloud Run
+Option 1 - Using Cloud Build (automated):
+```bash
+gcloud builds submit --config cloudbuild.yaml
+```
+
+Option 2 - Manual deployment:
+```bash
+docker build -t gcr.io/YOUR_PROJECT_ID/order-transcribe .
+docker push gcr.io/YOUR_PROJECT_ID/order-transcribe
+gcloud run deploy order-transcribe --image gcr.io/YOUR_PROJECT_ID/order-transcribe --platform managed --region us-central1 --allow-unauthenticated
+```
+
+### Important Notes
+- The web app stores data in browser's IndexedDB (via SQLite WASM) - each user's device keeps its own data
+- OpenAI API keys are stored locally in the user's browser, not on the server
+- The Docker container serves only static files - no backend server needed
+- COEP/COOP headers in nginx.conf are required for SharedArrayBuffer (SQLite WASM dependency)
